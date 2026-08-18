@@ -1,0 +1,250 @@
+import {type Buffer} from 'node:buffer';
+import {expectError, expectType} from 'tsd';
+import {
+	type GlobTask,
+	type GlobEntry,
+	type GlobbyStream,
+	type GlobbyEntryStream,
+	type GlobbyFilterFunction,
+	globby,
+	globbySync,
+	globbyStream,
+	generateGlobTasks,
+	generateGlobTasksSync,
+	isDynamicPattern,
+	isGitIgnored,
+	isGitIgnoredSync,
+	isIgnoredByIgnoreFiles,
+	isIgnoredByIgnoreFilesSync,
+} from './index.js';
+
+const __dirname = '';
+
+// Globby
+expectType<Promise<string[]>>(globby('*.tmp'));
+expectType<Promise<string[]>>(globby(['a.tmp', '*.tmp', '!{c,d,e}.tmp']));
+
+expectType<Promise<string[]>>(globby('*.tmp', {expandDirectories: false}));
+expectType<Promise<string[]>>(globby('*.tmp', {expandDirectories: ['a*', 'b*']}));
+expectType<Promise<string[]>>(globby('*.tmp', {
+	expandDirectories: {
+		files: ['a', 'b'],
+		extensions: ['tmp'],
+	},
+}));
+expectType<Promise<string[]>>(globby('*.tmp', {gitignore: true}));
+expectType<Promise<string[]>>(globby('*.tmp', {globalGitignore: true}));
+expectType<Promise<string[]>>(globby('*.tmp', {ignore: ['**/b.tmp']}));
+expectType<Promise<GlobEntry[]>>(globby('*.tmp', {objectMode: true}));
+expectType<Promise<GlobEntry[]>>(globby('*.tmp', {stats: true}));
+
+// Globby (sync)
+expectType<string[]>(globbySync('*.tmp'));
+expectType<string[]>(globbySync(['a.tmp', '*.tmp', '!{c,d,e}.tmp']));
+
+expectType<string[]>(globbySync('*.tmp', {expandDirectories: false}));
+expectType<string[]>(globbySync('*.tmp', {expandDirectories: ['a*', 'b*']}));
+expectType<string[]>(globbySync('*.tmp', {
+	expandDirectories: {
+		files: ['a', 'b'],
+		extensions: ['tmp'],
+	},
+}));
+expectType<string[]>(globbySync('*.tmp', {gitignore: true}));
+expectType<string[]>(globbySync('*.tmp', {globalGitignore: true}));
+expectType<string[]>(globbySync('*.tmp', {ignore: ['**/b.tmp']}));
+expectType<GlobEntry[]>(globbySync('*.tmp', {objectMode: true}));
+expectType<GlobEntry[]>(globbySync('*.tmp', {stats: true}));
+
+// Globby (stream)
+expectType<GlobbyStream>(globbyStream('*.tmp'));
+expectType<GlobbyStream>(globbyStream(['a.tmp', '*.tmp', '!{c,d,e}.tmp']));
+
+expectType<GlobbyStream>(globbyStream('*.tmp', {expandDirectories: false}));
+expectType<GlobbyStream>(globbyStream('*.tmp', {expandDirectories: ['a*', 'b*']}));
+expectType<GlobbyStream>(globbyStream('*.tmp', {
+	expandDirectories: {
+		files: ['a', 'b'],
+		extensions: ['tmp'],
+	},
+}));
+expectType<GlobbyStream>(globbyStream('*.tmp', {gitignore: true}));
+expectType<GlobbyStream>(globbyStream('*.tmp', {globalGitignore: true}));
+expectType<GlobbyStream>(globbyStream('*.tmp', {ignore: ['**/b.tmp']}));
+expectType<GlobbyEntryStream>(globbyStream('*.tmp', {objectMode: true}));
+expectType<GlobbyEntryStream>(globbyStream('*.tmp', {stats: true}));
+expectType<GlobbyEntryStream>(globbyStream('*.tmp', {objectMode: true, gitignore: true}));
+expectType<GlobbyEntryStream>(globbyStream('*.tmp', {stats: true, gitignore: true}));
+
+// eslint-disable-next-line unicorn/prefer-top-level-await
+(async () => {
+	const streamResult = [];
+	for await (const path of globbyStream('*.tmp')) {
+		streamResult.push(path);
+	}
+
+	// With the GlobbyStream interface, we can properly type the result as string[]
+	expectType<string[]>(streamResult);
+})();
+
+// eslint-disable-next-line unicorn/prefer-top-level-await
+(async () => {
+	const streamResult = [];
+	for await (const entry of globbyStream('*.tmp', {objectMode: true})) {
+		streamResult.push(entry);
+	}
+
+	expectType<GlobEntry[]>(streamResult);
+})();
+
+// eslint-disable-next-line unicorn/prefer-top-level-await
+(async () => {
+	const streamResult = [];
+	for await (const entry of globbyStream('*.tmp', {stats: true})) {
+		streamResult.push(entry);
+	}
+
+	expectType<GlobEntry[]>(streamResult);
+})();
+
+// GenerateGlobTasks
+expectType<Promise<GlobTask[]>>(generateGlobTasks('*.tmp'));
+expectType<Promise<GlobTask[]>>(generateGlobTasks(['a.tmp', '*.tmp', '!{c,d,e}.tmp']));
+
+expectType<Promise<GlobTask[]>>(generateGlobTasks('*.tmp', {expandDirectories: false}));
+expectType<Promise<GlobTask[]>>(generateGlobTasks('*.tmp', {expandDirectories: ['a*', 'b*']}));
+expectType<Promise<GlobTask[]>>(generateGlobTasks('*.tmp', {
+	expandDirectories: {
+		files: ['a', 'b'],
+		extensions: ['tmp'],
+	},
+}));
+expectType<Promise<GlobTask[]>>(generateGlobTasks('*.tmp', {gitignore: true}));
+expectType<Promise<GlobTask[]>>(generateGlobTasks('*.tmp', {ignore: ['**/b.tmp']}));
+expectError(generateGlobTasks('*.tmp', {globalGitignore: true}));
+
+// GenerateGlobTasksSync
+expectType<GlobTask[]>(generateGlobTasksSync('*.tmp'));
+expectType<GlobTask[]>(generateGlobTasksSync(['a.tmp', '*.tmp', '!{c,d,e}.tmp']));
+
+expectType<GlobTask[]>(generateGlobTasksSync('*.tmp', {expandDirectories: false}));
+expectType<GlobTask[]>(generateGlobTasksSync('*.tmp', {expandDirectories: ['a*', 'b*']}));
+expectType<GlobTask[]>(generateGlobTasksSync('*.tmp', {
+	expandDirectories: {
+		files: ['a', 'b'],
+		extensions: ['tmp'],
+	},
+}));
+expectType<GlobTask[]>(generateGlobTasksSync('*.tmp', {gitignore: true}));
+expectType<GlobTask[]>(generateGlobTasksSync('*.tmp', {ignore: ['**/b.tmp']}));
+expectError(generateGlobTasksSync('*.tmp', {globalGitignore: true}));
+
+// IsDynamicPattern
+expectType<boolean>(isDynamicPattern('**'));
+expectType<boolean>(isDynamicPattern(['**', 'path1', 'path2']));
+expectType<boolean>(isDynamicPattern(['**', 'path1', 'path2'], {extglob: false}));
+expectType<boolean>(isDynamicPattern(['**'], {cwd: new URL('file:///path/to/cwd')}));
+expectType<boolean>(isDynamicPattern(['**'], {cwd: __dirname}));
+
+// IsGitIgnored
+expectType<Promise<GlobbyFilterFunction>>(isGitIgnored());
+expectType<Promise<GlobbyFilterFunction>>(isGitIgnored({
+	cwd: __dirname,
+}));
+expectType<Promise<GlobbyFilterFunction>>(isGitIgnored({
+	cwd: new URL('file:///path/to/cwd'),
+}));
+
+// Supported option: suppressErrors
+expectType<Promise<GlobbyFilterFunction>>(isGitIgnored({
+	suppressErrors: true,
+}));
+
+// Supported option: deep
+expectType<Promise<GlobbyFilterFunction>>(isGitIgnored({
+	deep: 2,
+}));
+
+// Supported option: ignore
+expectType<Promise<GlobbyFilterFunction>>(isGitIgnored({
+	ignore: ['**/node_modules'],
+}));
+
+// Supported option: followSymbolicLinks
+expectType<Promise<GlobbyFilterFunction>>(isGitIgnored({
+	followSymbolicLinks: false,
+}));
+
+// Supported option: concurrency
+expectType<Promise<GlobbyFilterFunction>>(isGitIgnored({
+	concurrency: 4,
+}));
+
+// Supported option: throwErrorOnBrokenSymbolicLink
+expectType<Promise<GlobbyFilterFunction>>(isGitIgnored({
+	throwErrorOnBrokenSymbolicLink: false,
+}));
+
+// Multiple supported options combined
+expectType<Promise<GlobbyFilterFunction>>(isGitIgnored({
+	cwd: __dirname,
+	suppressErrors: true,
+	deep: 1,
+	ignore: ['**/node_modules', '**/dist'],
+	followSymbolicLinks: false,
+	concurrency: 8,
+	throwErrorOnBrokenSymbolicLink: false,
+}));
+
+// IsGitIgnoredSync
+expectType<GlobbyFilterFunction>(isGitIgnoredSync());
+expectType<GlobbyFilterFunction>(isGitIgnoredSync({
+	cwd: __dirname,
+}));
+expectType<GlobbyFilterFunction>(isGitIgnoredSync({
+	cwd: new URL('file:///path/to/cwd'),
+}));
+
+// Supported option: suppressErrors (sync)
+expectType<GlobbyFilterFunction>(isGitIgnoredSync({
+	suppressErrors: true,
+}));
+
+// Supported option: deep (sync)
+expectType<GlobbyFilterFunction>(isGitIgnoredSync({
+	deep: 2,
+}));
+
+// Supported option: ignore (sync)
+expectType<GlobbyFilterFunction>(isGitIgnoredSync({
+	ignore: ['**/node_modules'],
+}));
+
+// Supported option: followSymbolicLinks (sync)
+expectType<GlobbyFilterFunction>(isGitIgnoredSync({
+	followSymbolicLinks: false,
+}));
+
+// Supported option: concurrency (sync)
+expectType<GlobbyFilterFunction>(isGitIgnoredSync({
+	concurrency: 4,
+}));
+
+// Supported option: throwErrorOnBrokenSymbolicLink (sync)
+expectType<GlobbyFilterFunction>(isGitIgnoredSync({
+	throwErrorOnBrokenSymbolicLink: true,
+}));
+
+// Multiple supported options combined (sync)
+expectType<GlobbyFilterFunction>(isGitIgnoredSync({
+	cwd: __dirname,
+	suppressErrors: true,
+	deep: 1,
+	ignore: ['**/node_modules', '**/dist'],
+	followSymbolicLinks: false,
+	concurrency: 4,
+	throwErrorOnBrokenSymbolicLink: false,
+}));
+
+expectError(isIgnoredByIgnoreFiles('**/.gitignore', {globalGitignore: true}));
+expectError(isIgnoredByIgnoreFilesSync('**/.gitignore', {globalGitignore: true}));

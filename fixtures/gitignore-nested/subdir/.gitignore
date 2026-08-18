@@ -1,0 +1,4 @@
+*.log
+specific.txt
+deep/*.tmp
+temp/
