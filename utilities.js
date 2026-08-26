@@ -344,6 +344,30 @@ export const getParentGitignorePaths = (gitRoot, cwd) => {
 };
 
 /**
+Convert one ignore-file pattern into a pattern fast-glob can be given as `ignore`.
+
+A leading `/` in an ignore file anchors the pattern to the directory of the ignore file itself, which is `cwd` for every pattern that reaches here. It is not a filesystem-absolute path and must not reach fast-glob looking like one: `expandDirectories` resolves absolute ignore patterns against the real filesystem, so an anchored `/build` expands to `/build/**` whenever `/build` happens to exist — pruning every candidate when the checkout lives under it. Re-anchoring to `cwd` keeps the pattern scoped to `<cwd>/build`, the way Git scopes it.
+
+@param {string} pattern - A positive pattern from an ignore file, relative to cwd.
+@param {Function} normalizeDirectoryPatternForFastGlob - Function to normalize directory patterns.
+@returns {string|undefined} A cwd-relative pattern, or undefined when the pattern must not be forwarded.
+*/
+const convertPatternForFastGlob = (pattern, normalizeDirectoryPatternForFastGlob) => {
+	if (!pattern.startsWith('/')) {
+		return normalizeDirectoryPatternForFastGlob(pattern);
+	}
+
+	// Git treats a line of only slashes, and any `//`-prefixed line, as matching nothing.
+	if (pattern.startsWith('//') || /^\/+$/u.test(pattern)) {
+		return undefined;
+	}
+
+	// Normalize first so a directory pattern keeps its anchor (`/dist/` -> `/dist/**`),
+	// then drop the anchor to make the pattern cwd-relative (`dist/**`).
+	return normalizeDirectoryPatternForFastGlob(pattern).slice(1);
+};
+
+/**
 Convert ignore patterns to fast-glob compatible format.
 Returns empty array if patterns should be handled by predicate only.
 
@@ -375,7 +399,10 @@ export const convertPatternsForFastGlob = (patterns, usingGitRoot, normalizeDire
 			break; // Early exit on first negation
 		}
 
-		result.push(normalizeDirectoryPatternForFastGlob(pattern));
+		const convertedPattern = convertPatternForFastGlob(pattern, normalizeDirectoryPatternForFastGlob);
+		if (convertedPattern !== undefined) {
+			result.push(convertedPattern);
+		}
 	}
 
 	return hasNegations ? [] : result;
