@@ -380,3 +380,5 @@ export const convertPatternsForFastGlob = (patterns, usingGitRoot, normalizeDire
 
 	return hasNegations ? [] : result;
 };
+
+// mirror-corpus control: no change in behaviour
